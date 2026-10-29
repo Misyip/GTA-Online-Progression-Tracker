@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA Online Vehicle Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0e1117;
+      --panel-bg: #161b22;
+      --card-bg: #21262d;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent-red: #ff4d4d;
+      --accent-green: #00e676;
+      --accent-gray: #8b949e;
+      --gta-yellow: #f1c40f;
+      --border-color: #30363d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5rem;
+      letter-spacing: 2px;
+      color: var(--text-main);
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    /* Progress Widget */
+    .progress-section {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .progress-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .progress-stats {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--gta-yellow);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 18px;
+      background: #0d1117;
+      border-radius: 9px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00c853, #00e676);
+      transition: width 0.4s ease-in-out;
+      box-shadow: 0 0 12px rgba(0, 230, 118, 0.5);
+    }
+
+    .progress-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot.red { background: var(--accent-red); }
+    .dot.green { background: var(--accent-green); }
+    .dot.gray { background: var(--accent-gray); }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-filter {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-filter:hover, .btn-filter.active {
+      color: var(--text-main);
+      border-color: var(--gta-yellow);
+      background: var(--card-bg);
+    }
+
+    .search-input {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 1rem;
+      width: 260px;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--gta-yellow);
+    }
+
+    /* Table Styles */
+    .table-container {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background: #11151c;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr.vehicle-row {
+      transition: background 0.2s ease;
+    }
+
+    tr.vehicle-row:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Vehicle Color Classifications */
+    .status-red .vehicle-name {
+      color: var(--accent-red);
+      font-weight: 700;
+    }
+
+    .status-green .vehicle-name {
+      color: var(--accent-green);
+      font-weight: 700;
+    }
+
+    .status-gray .vehicle-name {
+      color: var(--accent-gray);
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-red { background: rgba(255, 77, 77, 0.15); color: var(--accent-red); border: 1px solid rgba(255, 77, 77, 0.3); }
+    .badge-green { background: rgba(0, 230, 118, 0.15); color: var(--accent-green); border: 1px solid rgba(0, 230, 118, 0.3); }
+    .badge-gray { background: rgba(139, 148, 158, 0.15); color: var(--accent-gray); border: 1px solid rgba(139, 148, 158, 0.3); }
+
+    /* Checkbox styling */
+    .checkbox-cell {
+      text-align: center;
+      width: 60px;
+    }
+
+    .custom-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: var(--accent-green);
+    }
+
+    .site-pill {
+      background: #21262d;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      border: 1px solid #30363d;
+      display: inline-block;
+    }
+
+    .price-text {
+      font-weight: 700;
+      color: var(--gta-yellow);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>GTA Online Vehicle Tracker</h1>
+      <p class="subtitle">Livery Collection & Unlock Progression</p>
+    </header>
+
+    <!-- Progress Tracker -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-title">Main Collection Completion</span>
+        <span class="progress-stats" id="progressText">0% (0 / 0)</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="progress-legend">
+        <span class="legend-item"><span class="dot red"></span> Red: Locked (Counted)</span>
+        <span class="legend-item"><span class="dot green"></span> Green: Unlocked (Counted)</span>
+        <span class="legend-item"><span class="dot gray"></span> Gray: Optional (Excluded from %)</span>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="filter-group">
+        <button class="btn-filter active" onclick="setFilter('all', this)">All</button>
+        <button class="btn-filter" onclick="setFilter('locked', this)">Locked</button>
+        <button class="btn-filter" onclick="setFilter('unlocked', this)">Unlocked</button>
+        <button class="btn-filter" onclick="setFilter('optional', this)">Optional</button>
+      </div>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search vehicles..." oninput="renderTable()">
+    </div>
+
+    <!-- Vehicle Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="checkbox-cell">Status</th>
+            <th>Vehicle Name</th>
+            <th>Site / Source</th>
+            <th>Price</th>
+            <th>Where to get livery?</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody id="vehicleTableBody">
+          <!-- Rows dynamically rendered here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Initial Vehicle Dataset parsed directly from spreadsheet specifications
+    const defaultVehicles = [
+      // Main Progression Tracked Vehicles
+      { id: '1', name: 'Annis Euros', site: 'Southern San Andreas Super Autos (2-Door Legend)', price: '1.8m', livery: 'Drift', status: 'red' },
+      { id: '2', name: 'Annis Remus', site: 'Southern San Andreas Super Autos (2-Door Standard)', price: '1.3m', livery: 'Stock, Rep, Drift', status: 'red' },
+      { id: '3', name: 'Annis ZR350', site: 'Southern San Andreas Super Autos (2-Door Legend)', price: '1.6m', livery: 'Stock, Drift', status: 'red' },
+      { id: '4', name: 'Canis Terminus', site: 'Southern San Andreas Super Autos (4-Door Standard)', price: '1.9m', livery: 'Stock', status: 'red' },
+      { id: '5', name: 'Declasse Impaler LX', site: 'Southern San Andreas Super Autos (2-Door Standard)', price: '1.5m', livery: 'Stock', status: 'red' },
+      { id: '6', name: 'Declasse Scramjet', site: 'Warstock Cache & Carry', price: '4m', livery: 'Stock', status: 'red' },
+      { id: '7', name: 'Dinka Kanjo SJ', site: 'Southern San Andreas Super Autos (2-Door Standard)', price: '1.4m', livery: 'Stock', status: 'red' },
+      { id: '8', name: 'Dinka RT3000', site: 'Southern San Andreas Super Autos (2-Door Standard)', price: '1.72m', livery: 'Stock, Stock, Rep', status: 'red' },
+      { id: '9', name: 'Dinka Sugoi', site: 'Southern San Andreas Super Autos (4-Door Standard)', price: '1.23m', livery: 'Stock', status: 'red' },
+      { id: '10', name: 'Dinka Veto Modern', site: 'Southern San Andreas Super Autos (Southern Special)', price: '1m', livery: 'Stock', status: 'red' },
+      { id: '11', name: 'Grotti Turismo Omaggio', site: 'Southern San Andreas Super Autos (2-Door Legend)', price: '2.85m', livery: 'Stock', status: 'red' },
+      { id: '12', name: 'Karin Futo GTX', site: 'Southern San Andreas Super Autos (2-Door Standard)', price: '1.6m', livery: 'Drift, Rep', status: 'red' },
+      { id: '13', name: 'Karin Sultan RS', site: 'Benny\'s Original Motor Works (Conversion)', price: '810k', livery: 'Stock', status: 'red' },
+      { id: '14', name: 'Maibatsu Penumbra FF', site: 'Southern San Andreas Super Autos (2-Door Standard)', price: '1.4m', livery: 'Stock', status: 'red' },
+      { id: '15', name: 'Ocelot Jugular', site: 'Southern San Andreas Super Autos (4-Door Legend)', price: '1.3m', livery: 'Stock', status: 'red' },
+      { id: '16', name: 'Ubermacht Sentinel Classic Widebody', site: 'Benny\'s Original Motor Works (Conversion)', price: '1.7m', livery: 'Drift', status: 'red' },
+
+      // Optional Vehicles (Gray - Excluded from completion %)
+      { id: '17', name: 'Bollokan Envisage', site: 'Southern San Andreas Super Autos (2-Door Legend)', price: '2.4m', livery: 'Stock', status: 'gray' },
+      { id: '18', name: 'Nagasaki Shinobi', site: 'Legendary Motorsport (Bike)', price: '2.5m', livery: 'Stock', status: 'gray' },
+      { id: '19', name: 'Mammoth F-160 Raiju', site: 'Warstock Cache & Carry', price: '7m', livery: 'Stock, Stock', status: 'gray' },
+      { id: '20', name: 'Volatol', site: 'Warstock Cache & Carry', price: '4m', status: 'gray', livery: 'Stock' },
+      { id: '21', name: 'Ubermacht Zion Classic', site: 'Optional List', price: 'N/A', livery: 'N/A', status: 'gray' },
+      { id: '22', name: 'Ubermacht Sentinel Classic', site: 'Optional List', price: 'N/A', livery: 'N/A', status: 'gray' },
+      { id: '23', name: 'Dinka Blista Kanjo', site: 'Optional List', price: 'N/A', livery: 'N/A', status: 'gray' },
+      { id: '24', name: 'Annis Hardy', site: 'Optional List', price: 'N/A', livery: 'N/A', status: 'gray' },
+      { id: '25', name: 'Karin S95', site: 'Optional List', price: 'N/A', livery: 'N/A', status: 'gray' },
+      { id: '26', name: 'Karin Futo', site: 'Optional List', price: 'N/A', livery: 'N/A', status: 'gray' },
+      { id: '27', name: 'Dinka/Karin Chavos V6', site: 'Optional List', price: 'N/A', livery: 'N/A', status: 'gray' }
+    ];
+
+    let vehicles = [];
+    let currentFilter = 'all';
+    let db = null;
+
+    // --- IndexedDB Database Connection ---
+    function initDatabase() {
+      const request = indexedDB.open('GTAOnlineTrackerDB', 1);
+
+      request.onupgradeneeded = (e) => {
+        const dbInstance = e.target.result;
+        if (!dbInstance.objectStoreNames.contains('vehicles')) {
+          dbInstance.createObjectStore('vehicles', { keyPath: 'id' });
+        }
+      };
+
+      request.onsuccess = (e) => {
+        db = e.target.result;
+        loadState();
+      };
+
+      request.onerror = (e) => {
+        console.warn('IndexedDB failed to initialize. Fallback to LocalStorage.', e);
+        loadStateLocalStorage();
+      };
+    }
+
+    function loadState() {
+      if (!db) {
+        loadStateLocalStorage();
+        return;
+      }
+
+      const tx = db.transaction('vehicles', 'readonly');
+      const store = tx.objectStore('vehicles');
+      const getAll = store.getAll();
+
+      getAll.onsuccess = () => {
+        const savedData = getAll.result;
+        if (savedData && savedData.length > 0) {
+          vehicles = savedData;
+        } else {
+          vehicles = JSON.parse(JSON.stringify(defaultVehicles));
+          saveAllState();
+        }
+        renderTable();
+        updateProgress();
+      };
+    }
+
+    function saveItemState(item) {
+      if (db) {
+        const tx = db.transaction('vehicles', 'readwrite');
+        const store = tx.objectStore('vehicles');
+        store.put(item);
+      }
+      localStorage.setItem('gta_vehicles_backup', JSON.stringify(vehicles));
+    }
+
+    function saveAllState() {
+      if (db) {
+        const tx = db.transaction('vehicles', 'readwrite');
+        const store = tx.objectStore('vehicles');
+        vehicles.forEach(v => store.put(v));
+      }
+      localStorage.setItem('gta_vehicles_backup', JSON.stringify(vehicles));
+    }
+
+    function loadStateLocalStorage() {
+      const stored = localStorage.getItem('gta_vehicles_backup');
+      if (stored) {
+        vehicles = JSON.parse(stored);
+      } else {
+        vehicles = JSON.parse(JSON.stringify(defaultVehicles));
+      }
+      renderTable();
+      updateProgress();
+    }
+
+    // --- Logic & Rendering ---
+    function toggleVehicle(id) {
+      const vehicle = vehicles.find(v => v.id === id);
+      if (!vehicle) return;
+
+      if (vehicle.status === 'red') {
+        vehicle.status = 'green';
+      } else if (vehicle.status === 'green') {
+        vehicle.status = 'red';
+      }
+
+      saveItemState(vehicle);
+      renderTable();
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const trackedVehicles = vehicles.filter(v => v.status !== 'gray');
+      const totalTracked = trackedVehicles.length;
+      const completedCount = trackedVehicles.filter(v => v.status === 'green').length;
+      const percentage = totalTracked > 0 ? Math.round((completedCount / totalTracked) * 100) : 0;
+
+      document.getElementById('progressText').innerText = `${percentage}% (${completedCount} / ${totalTracked})`;
+      document.getElementById('progressBar').style.width = `${percentage}%`;
+    }
+
+    function setFilter(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('vehicleTableBody');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      tbody.innerHTML = '';
+
+      const filtered = vehicles.filter(v => {
+        const matchesSearch = v.name.toLowerCase().includes(search) || v.site.toLowerCase().includes(search);
+        
+        if (!matchesSearch) return false;
+        if (currentFilter === 'locked') return v.status === 'red';
+        if (currentFilter === 'unlocked') return v.status === 'green';
+        if (currentFilter === 'optional') return v.status === 'gray';
+        return true;
+      });
+
+      filtered.forEach(v => {
+        const row = document.createElement('tr');
+        row.className = `vehicle-row status-${v.status}`;
+
+        const isChecked = v.status === 'green';
+        const isOptional = v.status === 'gray';
+
+        let badgeLabel = 'Locked';
+        let badgeClass = 'badge-red';
+
+        if (v.status === 'green') {
+          badgeLabel = 'Unlocked';
+          badgeClass = 'badge-green';
+        } else if (isOptional) {
+          badgeLabel = 'Optional';
+          badgeClass = 'badge-gray';
+        }
+
+        row.innerHTML = `
+          <td class="checkbox-cell">
+            <input type="checkbox" 
+                   class="custom-checkbox" 
+                   ${isChecked ? 'checked' : ''} 
+                   ${isOptional ? 'disabled' : ''} 
+                   onchange="toggleVehicle('${v.id}')">
+          </td>
+          <td class="vehicle-name">${v.name}</td>
+          <td><span class="site-pill">${v.site}</span></td>
+          <td class="price-text">${v.price}</td>
+          <td>${v.livery}</td>
+          <td><span class="status-badge ${badgeClass}">${badgeLabel}</span></td>
+        `;
+
+        tbody.appendChild(row);
+      });
+    }
+
+    // Initialize Database on load
+    window.addEventListener('DOMContentLoaded', initDatabase);
+  </script>
+</body>
+</html>
