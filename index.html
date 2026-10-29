@@ -147,7 +147,7 @@
       flex-wrap: wrap;
     }
 
-    .btn-filter {
+    .btn-filter, .btn-sort {
       background: var(--panel-bg);
       border: 1px solid var(--border-color);
       color: var(--text-muted);
@@ -160,7 +160,8 @@
       transition: all 0.2s ease;
     }
 
-    .btn-filter:hover, .btn-filter.active {
+    .btn-filter:hover, .btn-filter.active,
+    .btn-sort:hover, .btn-sort.active {
       color: var(--text-main);
       border-color: var(--gta-yellow);
       background: var(--card-bg);
@@ -316,7 +317,7 @@
     <!-- Progress Tracker -->
     <div class="progress-section">
       <div class="progress-header">
-        <span class="progress-title">Itasha Livery Collection</span>
+        <span class="progress-title">Livery Collection Progression</span>
         <span class="progress-stats" id="progressText">0% (0 / 0)</span>
       </div>
       <div class="progress-bar-container">
@@ -337,6 +338,13 @@
         <button class="btn-filter" onclick="setFilter('unlocked', this)">Completed</button>
         <button class="btn-filter" onclick="setFilter('optional', this)">Optional</button>
       </div>
+
+      <div class="filter-group">
+        <button class="btn-sort active" onclick="setPriceSort('default', this)">Default Sort</button>
+        <button class="btn-sort" onclick="setPriceSort('low-high', this)">Price: Low to High</button>
+        <button class="btn-sort" onclick="setPriceSort('high-low', this)">Price: High to Low</button>
+      </div>
+
       <div class="action-group">
         <input type="text" id="searchInput" class="search-input" placeholder="Search vehicle or site..." oninput="renderTable()">
         <button class="btn-reset" onclick="resetProgression()">Reset All</button>
@@ -400,7 +408,21 @@
 
     let vehicles = [];
     let currentFilter = 'all';
+    let currentSort = 'default';
     let db = null;
+
+    // Helper to parse price string into pure numeric value for sorting
+    function parsePriceValue(priceStr) {
+      if (!priceStr || priceStr === 'N/A') return -1;
+      let str = priceStr.toLowerCase().trim();
+      if (str.endsWith('m')) {
+        return parseFloat(str.replace('m', '')) * 1000000;
+      }
+      if (str.endsWith('k')) {
+        return parseFloat(str.replace('k', '')) * 1000;
+      }
+      return parseFloat(str) || 0;
+    }
 
     // --- IndexedDB Database Connection ---
     function initDatabase() {
@@ -438,7 +460,6 @@
       getAll.onsuccess = () => {
         const savedData = getAll.result;
         if (savedData && savedData.length > 0) {
-          // Sync saved status while maintaining vehicle definitions
           vehicles = defaultVehicles.map(def => {
             const saved = savedData.find(s => s.id === def.id);
             return saved ? { ...def, status: saved.status } : def;
@@ -526,12 +547,19 @@
       renderTable();
     }
 
+    function setPriceSort(sortMode, btn) {
+      currentSort = sortMode;
+      document.querySelectorAll('.btn-sort').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable();
+    }
+
     function renderTable() {
       const tbody = document.getElementById('vehicleTableBody');
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       tbody.innerHTML = '';
 
-      const filtered = vehicles.filter(v => {
+      let filtered = vehicles.filter(v => {
         const matchesSearch = v.name.toLowerCase().includes(search) || v.site.toLowerCase().includes(search);
         
         if (!matchesSearch) return false;
@@ -540,6 +568,16 @@
         if (currentFilter === 'optional') return v.status === 'gray';
         return true;
       });
+
+      // Apply sorting logic
+      if (currentSort === 'low-high') {
+        filtered.sort((a, b) => parsePriceValue(a.price) - parsePriceValue(b.price));
+      } else if (currentSort === 'high-low') {
+        filtered.sort((a, b) => parsePriceValue(b.price) - parsePriceValue(a.price));
+      } else {
+        // Default sort based on original array index/ID order
+        filtered.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+      }
 
       filtered.forEach(v => {
         const row = document.createElement('tr');
